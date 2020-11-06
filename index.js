@@ -5,7 +5,7 @@ const Discord = require('discord.js')
 
 const tail = new Tail(process.env.MINECRAFT_LOG_FILE);
 const rcon = new util.RCON(process.env.MINECRAFT_RCON_HOST, {
-  port: process.env.MINECRAFT_RCON_PORT,
+  port: parseInt(process.env.MINECRAFT_RCON_PORT, 10),
   password: process.env.MINECRAFT_RCON_PASSWORD
 });
 const discord = new Discord.Client()
