@@ -18,21 +18,12 @@ const versionRegex = /^This server is running\s(Paper\sversion\s.*)\s\(MC: (.*?)
 const discordBotToken = process.env.DISCORD_BOT_TOKEN;
 const discordChannel = process.env.DISCORD_CHANNEL;
 
-
 let channel;
-discord.on('ready', () => {
-  channel = discord.channels.cache.get(discordChannel)
-});
-
-discord.on('message', async message => {
-  if (message.channel.id !== channel.id) return
-  if (message.author.bot || message.author.id === discord.user.id) return
-});
 
 const tail_log = async (time, causedAt, level, message) => {
   if (level == 'INFO' && stoppingRegex.test(message)) {
     //console.log(message);
-    channel.send('サーバー止まったぽい。');
+    channel.send('サーバー止まったぽい');
   }
   if (level == 'INFO' && doneRegex.test(message)) {
     //console.log(message);
@@ -46,6 +37,27 @@ const tail_log = async (time, causedAt, level, message) => {
   }
 }
 
+const pong = async (message) => {
+  try {
+    const res = await util.status(process.env.MINECRAFT_RCON_HOST);
+    await message.reply(`上がってるよ ${res.version}`);
+  } catch(err) {
+    await message.reply('落ちてるよ');
+  }
+}
+
+discord.on('ready', () => {
+  channel = discord.channels.cache.get(discordChannel)
+});
+
+discord.on('message', async (message) => {
+  if (message.channel.id !== channel.id) return
+  if (message.author.bot || message.author.id === discord.user.id) return
+  if (message.content == 'ping') {
+    await pong(message);
+  }
+});
+
 tail.on('line', async (line) => {
   const [log, time, causedAt, level, message] = regexpLog.exec(line);
   await tail_log(time, causedAt, level, message);
@@ -55,7 +67,7 @@ rcon.on('output', (message) => {
   //console.log(message)
   const [msg, serverSoftware, mcVersion] = versionRegex.exec(message);
   if (serverSoftware && mcVersion) {
-    channel.send('サーバー上がったっぽい ' + serverSoftware + ' (' + mcVersion + ')');
+    channel.send(`サーバー上がったっぽい ${serverSoftware} (${mcVersion})`);
   }
 });
 
