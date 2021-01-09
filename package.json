@@ -10,9 +10,9 @@
   "license": "ISC",
   "private": true,
   "dependencies": {
-    "discord.js": "^12.4.1",
+    "discord.js": "^12.5.1",
     "dotenv": "^8.2.0",
-    "minecraft-server-util": "^3.0.4",
-    "tail": "^2.0.4"
+    "minecraft-server-util": "^3.4.2",
+    "tail": "^2.1.1"
   }
 }
