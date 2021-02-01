@@ -12,7 +12,7 @@ const discord = new Discord.Client()
 
 const regexpLog = /^\[(.*)]\s\[([^/]*)\/(.*)][^:]*:\s(.*)$/;
 const doneRegex = /^Done\s\(.*s\)!\sFor\shelp,\stype\s"help"$/;
-const stoppingRegex = /^Stopping\sserver$/;
+const closingRegex = /^Closing\sServer$/;
 const versionRegex = /^This server is running\s(Paper\sversion\s.*)\s\(MC: (.*?)\)/;
 
 const discordBotToken = process.env.DISCORD_BOT_TOKEN;
@@ -21,7 +21,7 @@ const discordChannel = process.env.DISCORD_CHANNEL;
 let channel;
 
 const tail_log = async (time, causedAt, level, message) => {
-  if (level == 'INFO' && stoppingRegex.test(message)) {
+  if (level == 'INFO' && closingRegex.test(message)) {
     //console.log(message);
     channel.send('サーバー止まったぽい');
   }
