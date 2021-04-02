@@ -13,12 +13,15 @@ const discord = new Discord.Client()
 const regexpLog = /^\[(.*)]\s\[([^/]*)\/(.*)][^:]*:\s(.*)$/;
 const doneRegex = /^Done\s\(.*s\)!\sFor\shelp,\stype\s"help"$/;
 const closingRegex = /^Closing\sServer$/;
-const versionRegex = /^This server is running\s(Paper\sversion\s.*)\s\(MC: (.*?)\)/;
+const versionRegex = /This server is running\s(Paper\sversion\s.*)\s\(MC: (.*?)\)/;
+const checkingRegex = /Checking version, please wait\.\.\./;
 
 const discordBotToken = process.env.DISCORD_BOT_TOKEN;
 const discordChannel = process.env.DISCORD_CHANNEL;
 
 let channel;
+
+const wait = async (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const tail_log = async (time, causedAt, level, message) => {
   if (level == 'INFO' && closingRegex.test(message)) {
@@ -27,22 +30,21 @@ const tail_log = async (time, causedAt, level, message) => {
   }
   if (level == 'INFO' && doneRegex.test(message)) {
     //console.log(message);
-    await rcon.connect()
-      .then(() => {
-        rcon.run('version');
-      })
-      .catch((error) => {
-        throw error;
-      });
+    try {
+      await rcon.connect();
+      await rcon.run('version');
+    } catch(err) {
+      console.error(err);
+    }
   }
 }
 
 const pong = async (message) => {
   try {
     const res = await util.status(process.env.MINECRAFT_RCON_HOST);
-    await message.reply(`上がってるよ ${res.version}`);
+    message.reply(`上がってるよ ${res.version}`);
   } catch(err) {
-    await message.reply('落ちてるよ');
+    message.reply('落ちてるよ');
   }
 }
 
@@ -63,11 +65,17 @@ tail.on('line', async (line) => {
   await tail_log(time, causedAt, level, message);
 });
 
-rcon.on('output', (message) => {
+rcon.on('output', async (message) => {
   //console.log(message)
+  if (checkingRegex.test(message)) {
+    await wait(1000);
+    await rcon.run('version');
+    return;
+  }
   const [msg, serverSoftware, mcVersion] = versionRegex.exec(message);
   if (serverSoftware && mcVersion) {
     channel.send(`サーバー上がったっぽい ${serverSoftware} (${mcVersion})`);
+    await rcon.close();
   }
 });
 
