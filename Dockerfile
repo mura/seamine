@@ -1,9 +1,15 @@
+FROM node:14-buster-slim as build
+
+WORKDIR /app
+COPY . /app
+
+RUN npm ci && npm run build
+
 FROM node:14-buster-slim
 
 WORKDIR /app
-
 COPY package*.json ./
-COPY index.js ./
+COPY --from=build /app/lib ./lib
 
 RUN npm ci --only=production
 
@@ -14,4 +20,4 @@ ENV MINECRAFT_RCON_PASSWORD=
 ENV DISCORD_BOT_TOKEN=
 ENV DISCORD_CHANNEL=
 
-CMD [ "node", "index.js" ]
+CMD [ "node", "lib/bot.js" ]
