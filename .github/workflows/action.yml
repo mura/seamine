@@ -32,7 +32,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ${{ github.repository_owner }}/seamine:latest
+          tags: ghcr.io/${{ github.repository_owner }}/seamine:latest
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
