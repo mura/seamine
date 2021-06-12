@@ -57,7 +57,7 @@ const rconCases: LogCase[] = [
     }
   },
   {
-    regex: /This server is running\s(Paper\sversion\s.*)\s\(MC: (.*?)\)/,
+    regex: /This server is running\s(.*\sversion\s.*)\s\(MC: (.*?)\)/,
     callback: async (exec) => {
       const [msg, serverSoftware, mcVersion] = exec
       if (serverSoftware && mcVersion) {
