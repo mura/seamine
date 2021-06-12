@@ -30,7 +30,7 @@ const emitter = new EventEmitter()
 const logCases: LogCase[] = [
   {
     level: 'INFO',
-    regex: /^Closing\sServer$/,
+    regex: /^(Closing|Stopping)\sServer$/i,
     callback: (exec) => {
       emitter.emit('close')
     }
