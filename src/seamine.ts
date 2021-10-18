@@ -19,11 +19,14 @@ type LogCase = {
 
 type WakeupCallback = (serverSoftware: string, mcVersion: string) => void;
 type CloseCallback = () => void;
+type RenderedCallback = (world: string | undefined) => void;
 
 const regexpLog = /^\[(.*)]\s\[([^/]*)\/(.*)][^:]*:\s(.*)$/;
 
 let rcon: RCON | undefined;
 let tail: Tail;
+
+let rendering: string | undefined = undefined
 
 const emitter = new EventEmitter()
 
@@ -64,6 +67,17 @@ const rconCases: LogCase[] = [
         emitter.emit('wakeup', serverSoftware, mcVersion);
         await rcon?.close();
       }
+    }
+  },
+  {
+    regex: /Tile Render Statistics:[\s\S]*?Active render jobs: (.*)[\s\S]/m,
+    callback: async (exec) => {
+      const [msg, world] = exec
+      if (world !== rendering) {
+        emitter.emit('rendered', world)
+        rendering = world
+      }
+      setTimeout(async () => { await rcon?.run('dynmap stats') }, 30_000)
     }
   }
 ];
@@ -118,9 +132,15 @@ const onWakeup = {
   }
 }
 
-const onClosed  = {
+const onClosed = {
   addListener: (listener: CloseCallback) => {
     emitter.addListener('close', listener)
+  }
+}
+
+const onRendered = {
+  addListener: (listener: RenderedCallback) => {
+    emitter.addListener('rendered', listener)
   }
 }
 
@@ -131,6 +151,7 @@ export {
   sendCommand,
   onWakeup,
   onClosed,
+  onRendered,
 }
 
 // vim: se ts=2 sw=2 sts=2 et:

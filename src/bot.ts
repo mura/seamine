@@ -20,8 +20,10 @@ const pong = async (message: Message) => {
 const discord = new Client();
 let channel: TextChannel | undefined
 
-discord.on('ready', () => {
+discord.on('ready', async () => {
   channel = discord.channels.cache.get(discordChannel) as TextChannel
+  await discord.user?.setActivity()
+  await seamine.sendCommand('dynmap stats')
 });
 
 discord.on('message', async (message) => {
@@ -38,6 +40,14 @@ seamine.onWakeup.addListener(async (serverSoftware, mcVersion) => {
 
 seamine.onClosed.addListener(async () => {
   await channel?.send('サーバー止まったぽい');
+})
+
+seamine.onRendered.addListener(async (world) => {
+  if (world) {
+    await discord.user?.setActivity(`Dynmap: ${world}`, {type: 'WATCHING'})
+  } else {
+    await discord.user?.setActivity()
+  }
 })
 
 seamine.setup({
