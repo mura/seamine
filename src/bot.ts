@@ -17,13 +17,22 @@ const pong = async (message: Message) => {
   }
 }
 
+const waitUp = async () => {
+  try {
+    await status(process.env.MINECRAFT_RCON_HOST!);
+    await seamine.sendCommand('dynmap stats')
+  } catch(err) {
+    setTimeout(async () => { await waitUp() }, 10_000)
+  }
+}
+
 const discord = new Client();
 let channel: TextChannel | undefined
 
 discord.on('ready', async () => {
   channel = discord.channels.cache.get(discordChannel) as TextChannel
   await discord.user?.setActivity()
-  await seamine.sendCommand('dynmap stats')
+  await waitUp()
 });
 
 discord.on('message', async (message) => {
