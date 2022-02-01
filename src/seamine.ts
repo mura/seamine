@@ -120,7 +120,7 @@ const setup = (rconOptions: RconOptions) => {
 }
 
 const start = (logfile: string) => {
-  tail = new Tail(logfile);
+  tail = new Tail(logfile, {follow: true});
   tail.on('line', async (line: string) => {
     await handleLogMessage(line)
   });
