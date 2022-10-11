@@ -105,11 +105,15 @@ const handleRconMessage = async (message: string) => {
 }
 
 const sendCommand = async (command: string): Promise<void> => {
-  await rcon?.connect();
-  return rcon?.run(command);
+  try {
+    await rcon?.run(command);
+  } catch (err) {
+    await rcon?.connect();
+    await rcon?.run(command);
+  }
 }
 
-const setup = (rconOptions: RconOptions) => {
+const setup = (rconOptions: RconOptions): void => {
   rcon = new util.RCON(rconOptions.host, {
     port: rconOptions.port,
     password: rconOptions.password
@@ -119,7 +123,7 @@ const setup = (rconOptions: RconOptions) => {
   });
 }
 
-const start = (logfile: string) => {
+const start = (logfile: string): void => {
   tail = new Tail(logfile, {follow: true});
   tail.on('line', async (line: string) => {
     await handleLogMessage(line)
@@ -127,19 +131,19 @@ const start = (logfile: string) => {
 }
 
 const onWakeup = {
-  addListener: (listener: WakeupCallback) => {
+  addListener: (listener: WakeupCallback): void => {
     emitter.addListener('wakeup', listener)
   }
 }
 
 const onClosed = {
-  addListener: (listener: CloseCallback) => {
+  addListener: (listener: CloseCallback): void => {
     emitter.addListener('close', listener)
   }
 }
 
 const onRendered = {
-  addListener: (listener: RenderedCallback) => {
+  addListener: (listener: RenderedCallback): void => {
     emitter.addListener('rendered', listener)
   }
 }
