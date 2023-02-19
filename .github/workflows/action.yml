@@ -8,7 +8,7 @@ on:
 
 jobs:
   docker-publish:
-    uses: dockerfiles/.github/workflows/docker-publish-ghcr.yml@main
+    uses: mura/dockerfiles/.github/workflows/docker-publish-ghcr.yml@main
     with:
       platforms: linux/amd64,linux/arm64,linux/arm/v7
       tags: ghcr.io/${{ github.repository_owner }}/cacti-backend:latest
