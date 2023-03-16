@@ -1,14 +1,14 @@
 'use strict'
 
 import { Tail } from 'tail'
-import * as util from 'minecraft-server-util'
-import RCON from 'minecraft-server-util/dist/structure/RCON';
+import { JavaStatusResponse, RCON, status } from 'minecraft-server-util'
 import { EventEmitter } from 'events'
 
-type RconOptions = {
+export type SeamineOptions = {
   host: string,
   port: number,
   password: string,
+  logfile: string
 };
 
 type LogCase = {
@@ -17,145 +17,138 @@ type LogCase = {
   callback: (exec: RegExpExecArray) => void
 };
 
-type WakeupCallback = (serverSoftware: string, mcVersion: string) => void;
-type CloseCallback = () => void;
-type RenderedCallback = (world: string | undefined) => void;
+type VersionResponse = {
+  serverSoftware: string,
+  mcVersion: string
+}
+
+export type WakeupCallback = (serverSoftware: string, mcVersion: string) => void;
+export type CloseCallback = () => void;
+export type RenderedCallback = (world: string | undefined) => void;
 
 const regexpLog = /^\[(.*)]\s\[([^/]*)\/(.*)][^:]*:\s(.*)$/;
 
-let rcon: RCON | undefined;
-let tail: Tail;
-
-let rendering: string | undefined = undefined
-
-const emitter = new EventEmitter()
-
-const logCases: LogCase[] = [
-  {
-    level: 'INFO',
-    regex: /^(Closing|Stopping)\sServer$/i,
-    callback: (exec) => {
-      emitter.emit('close')
-    }
-  },
-  {
-    level: 'INFO',
-    regex: /^Done\s\(.*s\)!\sFor\shelp,\stype\s"help"$/,
-    callback: async (exec) => {
-      try {
-        await sendCommand('version');
-      } catch(err) {
-        console.error(err);
-      }
-    }
-  }
-];
-
-const rconCases: LogCase[] = [
-  {
-    regex: /Checking version, please wait\.\.\./,
-    callback: async (exec) => {
-      await wait(1000);
-      await rcon?.run('version');
-    }
-  },
-  {
-    regex: /This server is running\s(.*\sversion\s.*)\s\(MC: (.*?)\)/,
-    callback: async (exec) => {
-      const [msg, serverSoftware, mcVersion] = exec
-      if (serverSoftware && mcVersion) {
-        emitter.emit('wakeup', serverSoftware, mcVersion);
-        await rcon?.close();
-      }
-    }
-  },
-  {
-    regex: /Tile Render Statistics:[\s\S]*?Active render jobs: (.*)[\s\S]/m,
-    callback: async (exec) => {
-      const [msg, world] = exec
-      if (world !== rendering) {
-        emitter.emit('rendered', world)
-        rendering = world
-      }
-      setTimeout(async () => { await rcon?.run('dynmap stats') }, 30_000)
-    }
-  }
-];
-
 const wait = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const handleLogMessage = async (line: string) => {
-  const [log, time, causedAt, level, message] = regexpLog.exec(line) || [];
-  
-  logCases.forEach(c => {
-    if (level !== c.level) {
-      return
+export class Seamine extends EventEmitter {
+  private rcon: RCON
+  private tail: Tail | undefined
+  private options: SeamineOptions
+  private rendering: string | null = null
+
+  private logCases: LogCase[] = [
+    {
+      level: 'INFO',
+      regex: /^(Closing|Stopping)\sServer$/i,
+      callback: (exec) => {
+        this.rcon.close()
+        this.rcon = new RCON()
+        this.emit('closed')
+      }
+    },
+    {
+      level: 'INFO',
+      regex: /^Done\s\(.*s\)!\sFor\shelp,\stype\s"help"$/,
+      callback: async (exec) => {
+        this.emit('wakeup')
+      }
     }
-    const exec = c.regex.exec(message)
-    exec && c.callback(exec)
-  })
-}
+  ];
 
-const handleRconMessage = async (message: string) => {
-  // console.log(message)
-  rconCases.forEach(c => {
-    const exec = c.regex.exec(message)
-    exec && c.callback(exec)
-  })
-}
-
-const sendCommand = async (command: string): Promise<void> => {
-  try {
-    await rcon?.run(command);
-  } catch (err) {
-    await rcon?.connect();
-    await rcon?.run(command);
+  constructor(options: SeamineOptions) {
+    super()
+    this.rcon = new RCON()
+    this.options = options
   }
-}
-
-const setup = (rconOptions: RconOptions): void => {
-  rcon = new util.RCON(rconOptions.host, {
-    port: rconOptions.port,
-    password: rconOptions.password
-  });
-  rcon.on('output', async (message: string) => {
-    await handleRconMessage(message)
-  });
-}
-
-const start = (logfile: string): void => {
-  tail = new Tail(logfile, {follow: true});
-  tail.on('line', async (line: string) => {
-    await handleLogMessage(line)
-  });
-}
-
-const onWakeup = {
-  addListener: (listener: WakeupCallback): void => {
-    emitter.addListener('wakeup', listener)
+  
+  private async login(): Promise<void> {
+    // console.log(`login: isConnected:${this.rcon.isConnected}, isLoggedIn:${this.rcon.isLoggedIn}`)
+    if (!this.rcon.isConnected) {
+      await this.rcon.connect(this.options.host, this.options.port)
+      // console.log(`connected: ${this.options.host}:${this.options.port}`)
+    }
+    if (!this.rcon.isLoggedIn) {
+      await this.rcon.login(this.options.password)
+      // console.log(`logged in: ${this.options.host}:${this.options.port}`)
+    }
   }
-}
 
-const onClosed = {
-  addListener: (listener: CloseCallback): void => {
-    emitter.addListener('close', listener)
+  async start(): Promise<void> {
+    this.tail = new Tail(this.options.logfile, {follow: true});
+    this.tail.on('line', async (line: string) => {
+      const [log, time, causedAt, level, message] = regexpLog.exec(line) || [];
+  
+      this.logCases.forEach(c => {
+        if (level !== c.level) {
+          return
+        }
+        const exec = c.regex.exec(message)
+        exec && c.callback(exec)
+      })
+    });
+
+    await this.watchDynmap()
   }
-}
 
-const onRendered = {
-  addListener: (listener: RenderedCallback): void => {
-    emitter.addListener('rendered', listener)
+  async version(): Promise<VersionResponse> {
+    const runningRegex = /This server is running\s(.*\sversion\s.*)\s\(MC: (.*?)\)/
+    const checkingRegex = /Checking version, please wait\.\.\./
+    let res: string | null = null
+    let exec: RegExpExecArray | null
+    while (true) {
+      res = await this.execute('version')
+      exec = runningRegex.exec(res)
+      if (exec) {
+        const [, serverSoftware, mcVersion] = exec
+        if (serverSoftware && mcVersion) {
+          return {serverSoftware, mcVersion}
+        }
+      }
+
+      exec = checkingRegex.exec(res)
+      if (exec) {
+        await wait(1000);
+      }
+    }
   }
-}
 
-export {
-  RconOptions,
-  setup,
-  start,
-  sendCommand,
-  onWakeup,
-  onClosed,
-  onRendered,
+  private async watchDynmap() {
+    try {
+      await this.status();
+      await this.dynmapStats()
+      setTimeout(async () => { await this.watchDynmap() }, 30_000)
+    } catch(err) {
+      setTimeout(async () => { await this.watchDynmap() }, 10_000)
+    }
+  }
+
+  private async dynmapStats(): Promise<void> {
+    const regex = /Tile Render Statistics:[\s\S]*?Active render jobs: (.*)[\s\S]/m
+    const res = await this.execute('dynmap stats')
+    const exec = regex.exec(res)
+    if (exec) {
+      const [, world] = exec
+      if (world !== this.rendering) {
+        // console.log(`redered: ${world}`)
+        this.emit('rendered', world)
+        this.rendering = world
+      }
+    }
+  }
+
+  async sendCommand(command: string): Promise<void> {
+    await this.login()
+    await this.rcon.run(command)
+  }
+
+  async execute(command: string): Promise<string> {
+    await this.login()
+    return this.rcon.execute(command)
+  }
+
+  async status(): Promise<JavaStatusResponse> {
+    return status(this.options.host)
+  }
 }
 
 // vim: se ts=2 sw=2 sts=2 et:

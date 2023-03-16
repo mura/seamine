@@ -1,41 +1,44 @@
 'use strict'
 
-require('dotenv').config();
-import { status } from 'minecraft-server-util'
-import { Client, TextChannel, Message } from 'discord.js'
-import * as seamine from './seamine'
+import * as dotenv from 'dotenv'
+dotenv.config()
+import { Client, TextChannel, Message, GatewayIntentBits, ActivityType, Events } from 'discord.js'
+import { Seamine } from './seamine'
 
 const discordBotToken = process.env.DISCORD_BOT_TOKEN;
 const discordChannel = process.env.DISCORD_CHANNEL!;
+const seamine = new Seamine({
+  host: process.env.MINECRAFT_RCON_HOST!,
+  port: parseInt(process.env.MINECRAFT_RCON_PORT!, 10),
+  password: process.env.MINECRAFT_RCON_PASSWORD!,
+  logfile: process.env.MINECRAFT_LOG_FILE!
+})
 
 const pong = async (message: Message) => {
   try {
-    const res = await status(process.env.MINECRAFT_RCON_HOST!);
-    message.reply(`上がってるよ ${res.version}`);
+    const res = await seamine.status();
+    message.reply(`上がってるよ ${res.version.name}`);
   } catch(err) {
     message.reply('落ちてるよ');
   }
 }
 
-const waitUp = async () => {
-  try {
-    await status(process.env.MINECRAFT_RCON_HOST!);
-    await seamine.sendCommand('dynmap stats')
-  } catch(err) {
-    setTimeout(async () => { await waitUp() }, 10_000)
-  }
-}
-
-const discord = new Client();
+const discord = new Client({ intents: [
+  GatewayIntentBits.Guilds,
+  GatewayIntentBits.GuildMessages,
+  GatewayIntentBits.MessageContent
+] });
 let channel: TextChannel | undefined
 
-discord.on('ready', async () => {
+discord.once(Events.ClientReady, async () => {
+  // console.log(`discord: ready`)
   channel = discord.channels.cache.get(discordChannel) as TextChannel
-  await discord.user?.setActivity()
-  await waitUp()
+  discord.user?.setActivity()
+  await seamine.start()
 });
 
-discord.on('message', async (message) => {
+discord.on(Events.MessageCreate, async (message) => {
+  // console.log(`discord: ${message}`)
   if (message.channel.id !== channel?.id) return
   if (message.author.bot || message.author.id === discord.user?.id) return
   if (message.content === 'ping') {
@@ -43,27 +46,23 @@ discord.on('message', async (message) => {
   }
 });
 
-seamine.onWakeup.addListener(async (serverSoftware, mcVersion) => {
-  await channel?.send(`サーバー上がったっぽい ${serverSoftware} (${mcVersion})`);
+seamine.on('wakeup', async () => {
+  const res = await seamine.version()
+  await channel?.send(`サーバー上がったっぽい ${res.serverSoftware} (${res.mcVersion})`);
 })
 
-seamine.onClosed.addListener(async () => {
+seamine.on('closed', async () => {
   await channel?.send('サーバー止まったぽい');
 })
 
-seamine.onRendered.addListener(async (world) => {
+seamine.on('rendered', (world) => {
   if (world) {
-    await discord.user?.setActivity(`Dynmap: ${world}`, {type: 'WATCHING'})
+    discord.user?.setActivity(`Dynmap: ${world}`, {type: ActivityType.Watching})
   } else {
-    await discord.user?.setActivity()
+    discord.user?.setActivity()
   }
 })
 
-seamine.setup({
-  host: process.env.MINECRAFT_RCON_HOST!,
-  port: parseInt(process.env.MINECRAFT_RCON_PORT!, 10),
-  password: process.env.MINECRAFT_RCON_PASSWORD!
-})
 discord.login(discordBotToken);
-seamine.start(process.env.MINECRAFT_LOG_FILE!)
+
 // vim: se ts=2 sw=2 sts=2 et:

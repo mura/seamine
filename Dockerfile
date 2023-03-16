@@ -1,11 +1,11 @@
-FROM node:14-bullseye-slim as build
+FROM node:18-bullseye-slim as build
 
 WORKDIR /app
 COPY . /app
 
 RUN npm ci && npm run build
 
-FROM node:14-bullseye-slim
+FROM node:18-bullseye-slim
 
 WORKDIR /app
 COPY package*.json ./
