@@ -48,7 +48,7 @@ export class Seamine extends EventEmitter {
     },
     {
       level: 'INFO',
-      regex: /^Done\s\(.*s\)!\sFor\shelp,\stype\s"help"$/,
+      regex: /^RCON\srunning\son\s/,
       callback: async (exec) => {
         this.emit('wakeup')
       }
