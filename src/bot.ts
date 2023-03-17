@@ -3,7 +3,7 @@
 import * as dotenv from 'dotenv'
 dotenv.config()
 import { Client, TextChannel, Message, GatewayIntentBits, ActivityType, Events } from 'discord.js'
-import { Seamine } from './seamine'
+import { Seamine } from './seamine.js'
 
 const discordBotToken = process.env.DISCORD_BOT_TOKEN;
 const discordChannel = process.env.DISCORD_CHANNEL!;
