@@ -53,9 +53,8 @@ discord.on(Events.MessageCreate, async (message) => {
   }
 });
 
-seamine.on('wakeup', async () => {
-  const res = await seamine.version()
-  await channel?.send(`サーバー上がったっぽい ${res.serverSoftware} (${res.mcVersion})`);
+seamine.on('wakeup', async (version) => {
+  await channel?.send(`サーバー上がったっぽい ${version.serverSoftware} (${version.mcVersion})`);
 })
 
 seamine.on('closed', async () => {
