@@ -128,7 +128,7 @@ export class Seamine extends EventEmitter {
       const [, serverSoftware, mcVersion] = exec
       if (serverSoftware && mcVersion) {
         this.version = {serverSoftware, mcVersion}
-        logger.info(`version: {}`, this.version)
+        logger.info(`version: ${this.version}`)
         this.emit('wakeup', this.version)
       }
       return
