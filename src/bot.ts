@@ -2,8 +2,15 @@
 
 import * as dotenv from 'dotenv'
 dotenv.config()
+import log4js from 'log4js'
 import { Client, TextChannel, Message, GatewayIntentBits, ActivityType, Events } from 'discord.js'
 import { Seamine } from './seamine.js'
+
+log4js.configure({
+  appenders: { out: { type: "stdout" } },
+  categories: { default: { appenders: ["out"], level: "info" } },
+})
+const logger = log4js.getLogger('bot')
 
 const discordBotToken = process.env.DISCORD_BOT_TOKEN;
 const discordChannel = process.env.DISCORD_CHANNEL!;
@@ -31,7 +38,7 @@ const discord = new Client({ intents: [
 let channel: TextChannel | undefined
 
 discord.once(Events.ClientReady, async () => {
-  // console.log(`discord: ready`)
+  logger.info(`discord: ready`)
   channel = discord.channels.cache.get(discordChannel) as TextChannel
   discord.user?.setActivity()
   await seamine.start()
@@ -63,6 +70,10 @@ seamine.on('rendered', (world) => {
   }
 })
 
-discord.login(discordBotToken);
+try {
+  await discord.login(discordBotToken);
+} catch (err) {
+  logger.error('discord login failed: {}', err)
+}
 
 // vim: se ts=2 sw=2 sts=2 et:

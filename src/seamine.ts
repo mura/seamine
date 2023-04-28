@@ -1,8 +1,11 @@
 'use strict'
 
+import log4js from '@log4js-node/log4js-api'
 import { Tail } from 'tail'
 import { JavaStatusResponse, RCON, status } from 'minecraft-server-util'
 import { EventEmitter } from 'events'
+
+const logger = log4js.getLogger('seamine')
 
 export type SeamineOptions = {
   host: string,
@@ -65,15 +68,19 @@ export class Seamine extends EventEmitter {
     // console.log(`login: isConnected:${this.rcon.isConnected}, isLoggedIn:${this.rcon.isLoggedIn}`)
     if (!this.rcon.isConnected) {
       await this.rcon.connect(this.options.host, this.options.port)
-      // console.log(`connected: ${this.options.host}:${this.options.port}`)
+      logger.info(`connected: ${this.options.host}:${this.options.port}`)
     }
     if (!this.rcon.isLoggedIn) {
       await this.rcon.login(this.options.password)
-      // console.log(`logged in: ${this.options.host}:${this.options.port}`)
+      logger.info(`logged in: ${this.options.host}:${this.options.port}`)
     }
   }
 
   async start(): Promise<void> {
+    if (this.tail) {
+      return
+    }
+
     this.tail = new Tail(this.options.logfile, {follow: true});
     this.tail.on('line', async (line: string) => {
       const [log, time, causedAt, level, message] = regexpLog.exec(line) || [];
@@ -129,7 +136,7 @@ export class Seamine extends EventEmitter {
     if (exec) {
       const [, world] = exec
       if (world !== this.rendering) {
-        // console.log(`redered: ${world}`)
+        logger.info(`redered: ${world}`)
         this.emit('rendered', world)
         this.rendering = world
       }
