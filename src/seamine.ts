@@ -136,6 +136,7 @@ export class Seamine extends EventEmitter {
 
     exec = checkingRegex.exec(message)
     if (exec) {
+      logger.info('version: checking')
       setTimeout(async () => { await this.runVersion() }, 1_000)
     }
   }
