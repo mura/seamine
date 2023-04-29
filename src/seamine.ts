@@ -46,7 +46,7 @@ export class Seamine extends EventEmitter {
       level: 'INFO',
       regex: /^(Closing|Stopping)\sServer$/i,
       callback: (exec) => {
-        logger.info('close server')
+        logger.info('server closed')
         this.rcon.close()
         this.rcon = this.createRCON()
         this.emit('closed')
@@ -56,7 +56,7 @@ export class Seamine extends EventEmitter {
       level: 'INFO',
       regex: /^RCON\srunning\son\s/,
       callback: async (exec) => {
-        logger.info('start server')
+        logger.info('server started')
         await this.runVersion()
       }
     }
