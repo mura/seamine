@@ -162,7 +162,6 @@ export class Seamine extends EventEmitter {
 
   private async runDynmapStats() {
     try {
-      await this.status()
       this.reqIds.set(await this.run('dynmap stats'), 'dynmap_stats')
     } catch (err) {
       setTimeout(async () => { await this.runDynmapStats() }, 10_000)
