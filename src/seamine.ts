@@ -40,6 +40,7 @@ export class Seamine extends EventEmitter {
   private rendering: string | null = null
   private reqIds: Map<number, string> = new Map
   private version: VersionResponse | undefined
+  private restartTimeout: NodeJS.Timeout | undefined
 
   private logCases: LogCase[] = [
     {
@@ -47,8 +48,8 @@ export class Seamine extends EventEmitter {
       regex: /^(Closing|Stopping)\sServer$/i,
       callback: (exec) => {
         logger.info('server closed')
-        this.rcon.close()
-        this.rcon = this.createRCON()
+        this.clearRestartInterval()
+        this.recreateRCON()
         this.emit('closed')
       }
     },
@@ -77,6 +78,10 @@ export class Seamine extends EventEmitter {
     if (!this.rcon.isLoggedIn) {
       await this.rcon.login(this.options.password)
       logger.info(`logged in: ${this.options.host}:${this.options.port}`)
+
+      this.clearRestartInterval()
+      // 6時間毎にRCONをリセット
+      this.restartTimeout = setInterval(() => this.recreateRCON(), 21_600_000)
     }
   }
 
@@ -117,6 +122,12 @@ export class Seamine extends EventEmitter {
     })
 
     return rcon
+  }
+
+  private recreateRCON() {
+    this.rcon.close()
+    this.rcon.removeAllListeners()
+    this.rcon = this.createRCON()
   }
 
   private async handleVersion(message: string) {
@@ -165,6 +176,13 @@ export class Seamine extends EventEmitter {
       this.reqIds.set(await this.run('dynmap stats'), 'dynmap_stats')
     } catch (err) {
       setTimeout(async () => { await this.runDynmapStats() }, 10_000)
+    }
+  }
+
+  private clearRestartInterval() {
+    if (this.restartTimeout) {
+      clearInterval(this.restartTimeout)
+      this.restartTimeout = undefined
     }
   }
 
