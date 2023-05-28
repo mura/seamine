@@ -48,7 +48,7 @@ export class Seamine extends EventEmitter {
       regex: /^(Closing|Stopping)\sServer$/i,
       callback: (exec) => {
         logger.info('server closed')
-        this.clearRestartInterval()
+        this.clearRestartTimeout()
         this.recreateRCON()
         this.emit('closed')
       }
@@ -72,16 +72,15 @@ export class Seamine extends EventEmitter {
   private async login(): Promise<void> {
     // console.log(`login: isConnected:${this.rcon.isConnected}, isLoggedIn:${this.rcon.isLoggedIn}`)
     if (!this.rcon.isConnected) {
+      this.clearRestartTimeout()
       await this.rcon.connect(this.options.host, this.options.port)
       logger.info(`connected: ${this.options.host}:${this.options.port}`)
+      // 6時間毎にRCONをリセット
+      this.restartTimeout = setTimeout(() => this.recreateRCON(), 21_600_000)
     }
     if (!this.rcon.isLoggedIn) {
       await this.rcon.login(this.options.password)
       logger.info(`logged in: ${this.options.host}:${this.options.port}`)
-
-      this.clearRestartInterval()
-      // 6時間毎にRCONをリセット
-      this.restartTimeout = setInterval(() => this.recreateRCON(), 21_600_000)
     }
   }
 
@@ -127,6 +126,7 @@ export class Seamine extends EventEmitter {
   private recreateRCON() {
     this.rcon.close()
     this.rcon.removeAllListeners()
+    this.reqIds.clear()
     this.rcon = this.createRCON()
   }
 
@@ -138,8 +138,8 @@ export class Seamine extends EventEmitter {
     if (exec) {
       const [, serverSoftware, mcVersion] = exec
       if (serverSoftware && mcVersion) {
-        this.version = {serverSoftware, mcVersion}
-        logger.info(`version: ${this.version}`)
+        this.version = { serverSoftware, mcVersion }
+        logger.info(`version: ${JSON.stringify(this.version)}`)
         this.emit('wakeup', this.version)
       }
       return
@@ -179,7 +179,7 @@ export class Seamine extends EventEmitter {
     }
   }
 
-  private clearRestartInterval() {
+  private clearRestartTimeout() {
     if (this.restartTimeout) {
       clearInterval(this.restartTimeout)
       this.restartTimeout = undefined
