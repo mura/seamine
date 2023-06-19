@@ -41,6 +41,7 @@ export class Seamine extends EventEmitter {
   private reqIds: Map<number, string> = new Map
   private version: VersionResponse | undefined
   private restartTimeout: NodeJS.Timeout | undefined
+  private started: boolean = false
 
   private logCases: LogCase[] = [
     {
@@ -50,7 +51,10 @@ export class Seamine extends EventEmitter {
         logger.info('server closed')
         this.clearRestartTimeout()
         this.recreateRCON()
-        this.emit('closed')
+        if (this.started) {
+          this.emit('closed')
+          this.started = false
+        }
       }
     },
     {
@@ -58,6 +62,7 @@ export class Seamine extends EventEmitter {
       regex: /^RCON\srunning\son\s/,
       callback: async (exec) => {
         logger.info('server started')
+        this.started = true
         await this.runVersion()
       }
     }
@@ -82,6 +87,7 @@ export class Seamine extends EventEmitter {
       await this.rcon.login(this.options.password)
       logger.info(`logged in: ${this.options.host}:${this.options.port}`)
     }
+    this.started = true
   }
 
   async start(): Promise<void> {
