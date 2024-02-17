@@ -3,7 +3,8 @@ FROM node:18-bookworm-slim as build
 WORKDIR /app
 COPY . /app
 
-RUN npm ci && npm run build
+RUN npm update -g npm
+RUN npm ci --no-audit --maxsockets 1 && npm run build
 
 FROM node:18-bookworm-slim
 
@@ -11,7 +12,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY --from=build /app/lib ./lib
 
-RUN npm ci --only=production
+RUN npm update -g npm
+RUN npm ci --no-audit --maxsockets 1 --only=production
 
 ENV MINECRAFT_LOG_FILE=/app/logs/latest.log
 ENV MINECRAFT_RCON_HOST=
