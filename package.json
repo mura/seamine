@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint --ext .js,.ts .",
+    "lint": "eslint src",
     "build": "tsc"
   },
   "author": "",
@@ -12,22 +12,25 @@
   "private": true,
   "dependencies": {
     "@log4js-node/log4js-api": "^1.0.2",
-    "discord.js": "^14.11.0",
-    "dotenv": "^16.0.3",
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5",
     "log4js": "^6.9.1",
     "minecraft-server-util": "^5.4.2",
     "tail": "^2.2.6"
   },
   "devDependencies": {
-    "@types/node": "^20.1.7",
-    "@types/tail": "^2.2.1",
-    "@types/ws": "^8.5.4",
-    "@typescript-eslint/eslint-plugin": "^5.59.6",
-    "@typescript-eslint/parser": "^5.59.6",
-    "eslint": "^8.40.0",
-    "eslint-plugin-import": "^2.27.5",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.0.4"
+    "@eslint/js": "^8.57.0",
+    "@tsconfig/node20": "^20.1.4",
+    "@types/eslint__js": "^8.42.3",
+    "@types/node": "^20.14.2",
+    "@types/tail": "^2.2.3",
+    "@types/ws": "^8.5.10",
+    "eslint": "^8.57.0",
+    "eslint-plugin-import": "^2.29.1",
+    "globals": "^15.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^7.12.0"
   },
   "type": "module"
 }
