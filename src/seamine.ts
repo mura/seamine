@@ -1,5 +1,3 @@
-'use strict'
-
 import log4js from '@log4js-node/log4js-api'
 import { Tail } from 'tail'
 import { JavaStatusResponse, RCON, status } from 'minecraft-server-util'
@@ -118,10 +116,14 @@ export class Seamine extends EventEmitter {
       switch (type) {
         case 'version': {
           await this.handleVersion(message)
+          break;
         }
         case 'dynmap_stats': {
           this.handleDynmapStats(message)
+          break;
         }
+        default:
+          break;
       }
       this.reqIds.delete(requestID)
     })
