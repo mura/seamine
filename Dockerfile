@@ -1,4 +1,4 @@
-FROM node:18-bookworm-slim as build
+FROM node:20-bookworm-slim as build
 
 WORKDIR /app
 COPY . /app
@@ -6,7 +6,7 @@ COPY . /app
 RUN npm update -g npm
 RUN npm ci --no-audit --maxsockets 1 && npm run build
 
-FROM node:18-bookworm-slim
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 COPY package*.json ./
