@@ -1,5 +1,4 @@
-import * as dotenv from 'dotenv'
-dotenv.config()
+import 'dotenv/config'
 import log4js from 'log4js'
 import { Client, TextChannel, Message, GatewayIntentBits, ActivityType, Events } from 'discord.js'
 import { Seamine } from './seamine.js'
