@@ -139,7 +139,7 @@ export class Seamine extends EventEmitter {
   }
 
   private async handleVersion(message: string) {
-    const runningRegex = /This server is running\s(.*\sversion\s.*)\s\(MC: (.*?)\)/
+    const runningRegex = /This server is running\s(.*\sversion)\s[\w./@]+/
     const checkingRegex = /Checking version, please wait\.\.\./
     
     let exec = runningRegex.exec(message)
