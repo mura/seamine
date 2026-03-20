@@ -29,8 +29,6 @@ export type RenderedCallback = (world: string | undefined) => void;
 
 const regexpLog = /^\[(.*)]\s\[([^/]*)\/(.*)][^:]*:\s(.*)$/;
 
-const wait = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 export class Seamine extends EventEmitter {
   private rcon: RCON
   private tail: Tail | undefined
@@ -45,7 +43,7 @@ export class Seamine extends EventEmitter {
     {
       level: 'INFO',
       regex: /^(Closing|Stopping)\sServer$/i,
-      callback: (exec) => {
+      callback: () => {
         logger.info('server closed')
         this.clearRestartTimeout()
         this.recreateRCON()
@@ -58,7 +56,7 @@ export class Seamine extends EventEmitter {
     {
       level: 'INFO',
       regex: /^RCON\srunning\son\s/,
-      callback: async (exec) => {
+      callback: async () => {
         logger.info('server started')
         this.started = true
         await this.runVersion()
@@ -95,14 +93,14 @@ export class Seamine extends EventEmitter {
 
     this.tail = new Tail(this.options.logfile, {follow: true});
     this.tail.on('line', async (line: string) => {
-      const [log, time, causedAt, level, message] = regexpLog.exec(line) || [];
+      const [, , , level, message] = regexpLog.exec(line) || [];
   
       this.logCases.forEach(c => {
         if (level !== c.level) {
           return
         }
         const exec = c.regex.exec(message)
-        exec && c.callback(exec)
+        if (exec) { c.callback(exec) }
       })
     });
 
@@ -182,7 +180,7 @@ export class Seamine extends EventEmitter {
   private async runDynmapStats() {
     try {
       this.reqIds.set(await this.run('dynmap stats'), 'dynmap_stats')
-    } catch (err) {
+    } catch {
       setTimeout(async () => { await this.runDynmapStats() }, 10_000)
     }
   }

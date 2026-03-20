@@ -1,4 +1,5 @@
-import 'dotenv/config'
+import { config } from '@dotenvx/dotenvx'
+config({ ignore: ['MISSING_ENV_FILE'] })
 import log4js from 'log4js'
 import { Client, TextChannel, Message, GatewayIntentBits, ActivityType, Events } from 'discord.js'
 import { Seamine } from './seamine.js'
@@ -22,7 +23,7 @@ const pong = async (message: Message) => {
   try {
     const res = await seamine.status();
     message.reply(`上がってるよ ${res.version.name}`);
-  } catch(err) {
+  } catch {
     message.reply('落ちてるよ');
   }
 }
