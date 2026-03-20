@@ -7,7 +7,16 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: npm ci
+      - run: npm test
+
   docker-publish:
+    needs: test
     uses: mura/dockerfiles/.github/workflows/docker-publish-ghcr.yml@main
     with:
       platforms: linux/amd64,linux/arm64
