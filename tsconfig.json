@@ -1,16 +1,15 @@
 {
-  "extends": "@tsconfig/node20/tsconfig.json",
+  "extends": "@tsconfig/node24/tsconfig.json",
   "compilerOptions": {
     "noImplicitReturns": true,
     "outDir": "lib",
-    "sourceMap": true,
+    "sourceMap": true
   },
   "compileOnSave": true,
   "include": [
     "src"
   ],
   "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
+    "esm": true
   }
 }
